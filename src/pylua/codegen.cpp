@@ -50,6 +50,15 @@ namespace pylua {
 			chunkname = chkname;
 		}
 
+		Proto * visit(PyObject * node) {
+			PyObjW nodew(node);
+			PyObjW lineno = nodew["lineno"];
+			if (lineno != PyObjW::None && PyLong_Check(lineno)) {
+				lex.state.linenumber = PyLong_AsLong(lineno); // Set line number in the simulated lexer state
+			}
+			return PyAST_Visitor::visit(node);
+		}
+
 		Proto * visit_Module(PyObject * node) { // Equivalent of chunk()
 			PyObjW nodew(node);
 			struct LexState * ls = &lex.state;

@@ -27,7 +27,7 @@ namespace pylua {
 
 	public:
 		virtual Proto * generic_visit(PyObject * node);
-		Proto * visit(PyObject * node);
+		virtual Proto * visit(PyObject * node);
 	};
 
 // Takes method with the given name and adds it to the v_fn_map visitor table.
