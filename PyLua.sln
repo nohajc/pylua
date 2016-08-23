@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyLua", "PyLua.vcxproj", "{82E3F703-BCA7-4B28-AA2B-ECB8AB8AA879}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{82E3F703-BCA7-4B28-AA2B-ECB8AB8AA879}.Debug|Win32.ActiveCfg = Debug|Win32
+		{82E3F703-BCA7-4B28-AA2B-ECB8AB8AA879}.Debug|Win32.Build.0 = Debug|Win32
+		{82E3F703-BCA7-4B28-AA2B-ECB8AB8AA879}.Release|Win32.ActiveCfg = Release|Win32
+		{82E3F703-BCA7-4B28-AA2B-ECB8AB8AA879}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
