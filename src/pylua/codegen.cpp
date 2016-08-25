@@ -93,9 +93,14 @@ namespace pylua {
 			return ret;
 		}
 
-		void * visit_Cond(PyObject * node, void * ud = NULL) { // Called directly - no need to register
-			// TODO: implement
-			return visit(node, ud);
+		int visit_Cond(PyObject * node, void * ud = NULL) { // Called directly - no need to register
+			LexState * ls = &lex.state;
+			expdesc v;
+
+			visit(node, &v); /* read condition */
+			if (v.k == VNIL) v.k = VFALSE;  /* `falses' are all equal here */
+			luaK_goiftrue(ls->fs, &v);
+			return v.f;
 		}
 
 		void * visit_If(PyObject * node, void * ud) { // Equivalent of ifstat()
@@ -107,7 +112,7 @@ namespace pylua {
 			// test_then_block(ls) equivalent inlined
 			PyObjW node_test = nodew["test"];
 			assert(node_test != PyObjW::None);
-			flist = cast(int, visit_Cond(node_test)); // cond(ls)
+			flist = visit_Cond(node_test); // cond(ls)
 
 			PyObjW node_body = nodew["body"];
 			assert(node_body != PyObjW::None);
@@ -141,7 +146,7 @@ namespace pylua {
 				
 				node_test = nodew["test"];
 				assert(node_test != PyObjW::None);
-				flist = cast(int, visit_Cond(node_test)); // cond(ls)
+				flist = visit_Cond(node_test); // cond(ls)
 
 				node_body = nodew["body"];
 				assert(node_body != PyObjW::None);
