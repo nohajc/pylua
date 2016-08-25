@@ -85,12 +85,17 @@ namespace pylua {
 			BlockCnt bl;
 			enterblock(fs, &bl, 0);
 
-			void * ret = visit_Body(node);
+			void * ret = visit_Body(node, ud);
 
 			lua_assert(bl.breaklist == NO_JUMP);
 			leaveblock(fs);
 
 			return ret;
+		}
+
+		void * visit_Cond(PyObject * node, void * ud = NULL) { // Called directly - no need to register
+			// TODO: implement
+			return visit(node, ud);
 		}
 
 		void * visit_If(PyObject * node, void * ud) { // Equivalent of ifstat()
@@ -102,7 +107,7 @@ namespace pylua {
 			// test_then_block(ls) equivalent inlined
 			PyObjW node_test = nodew["test"];
 			assert(node_test != PyObjW::None);
-			flist = cast(int, visit(node_test)); // cond(ls)
+			flist = cast(int, visit_Cond(node_test)); // cond(ls)
 
 			PyObjW node_body = nodew["body"];
 			assert(node_body != PyObjW::None);
@@ -136,7 +141,7 @@ namespace pylua {
 				
 				node_test = nodew["test"];
 				assert(node_test != PyObjW::None);
-				flist = cast(int, visit(node_test)); // cond(ls)
+				flist = cast(int, visit_Cond(node_test)); // cond(ls)
 
 				node_body = nodew["body"];
 				assert(node_body != PyObjW::None);
