@@ -15,7 +15,7 @@
 using namespace std;
 
 namespace pylua {
-	typedef function<Proto*(PyObject*)> visitor_func;
+	typedef function<void*(PyObject*, void*)> visitor_func;
 
 	class PyAST_Visitor {
 		// Table of visitors. Key: node type, Value: method pointer
@@ -26,8 +26,8 @@ namespace pylua {
 		void register_visitor_func(const string & type, visitor_func fn);
 
 	public:
-		virtual Proto * generic_visit(PyObject * node);
-		virtual Proto * visit(PyObject * node);
+		virtual void * generic_visit(PyObject * node, void * ud = NULL);
+		virtual void * visit(PyObject * node, void * ud = NULL);
 	};
 
 // Takes method with the given name and adds it to the v_fn_map visitor table.

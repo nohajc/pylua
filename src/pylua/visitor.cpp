@@ -6,7 +6,7 @@ namespace pylua {
 		v_fn_map[type] = fn;
 	}
 
-	Proto * PyAST_Visitor::generic_visit(PyObject * node) {
+	void * PyAST_Visitor::generic_visit(PyObject * node, void * ud) {
 		assert(node != NULL);
 		PyObjW nodew(node);
 
@@ -15,16 +15,16 @@ namespace pylua {
 			return NULL;
 		}
 		
-		node_fields.each([this, &nodew](PyObject * field_name) {
+		node_fields.each([this, &nodew, ud](PyObject * field_name) {
 			PyObjW field_value = nodew[field_name];
 
 			if (PyList_Check(field_value)) {
-				field_value.each([this](PyObject * lst_item) {
-					visit(lst_item);
+				field_value.each([this, ud](PyObject * lst_item) {
+					visit(lst_item, ud);
 				});
 			}
 			else {
-				visit(field_value);
+				visit(field_value, ud);
 			}
 		});
 
@@ -62,7 +62,7 @@ namespace pylua {
 		return NULL;
 	}
 
-	Proto * PyAST_Visitor::visit(PyObject * node) {
+	void * PyAST_Visitor::visit(PyObject * node, void * ud) {
 		/*PyObject * node_class = PyObject_GetAttrString(node, "__class__");
 		PyObject * node_class_name = PyObject_GetAttrString(node_class, "__name__");*/
 
@@ -78,8 +78,8 @@ namespace pylua {
 		auto it = v_fn_map.find(key);
 
 		if (it == v_fn_map.end()) {
-			return generic_visit(node);
+			return generic_visit(node, ud);
 		}
-		return it->second(node);
+		return it->second(node, ud);
 	}
 }

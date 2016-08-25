@@ -45,21 +45,42 @@ namespace pylua {
 		PyAST_Codegen(lua_State * ls, const char * chkname) : lex(ls) {
 			REG_VISITOR(Module);
 			REG_VISITOR(Expr);
+			REG_VISITOR(If);
 
 			L = ls;
 			chunkname = chkname;
 		}
 
-		Proto * visit(PyObject * node) {
+		void * visit(PyObject * node, void * ud = NULL) {
 			PyObjW nodew(node);
 			PyObjW lineno = nodew["lineno"];
 			if (lineno != PyObjW::None && PyLong_Check(lineno)) {
 				lex.state.linenumber = PyLong_AsLong(lineno); // Set line number in the simulated lexer state
 			}
-			return PyAST_Visitor::visit(node);
+			return PyAST_Visitor::visit(node, ud);
 		}
 
-		Proto * visit_Module(PyObject * node) { // Equivalent of chunk()
+		void * visit_Body(PyObject * node, void * ud = NULL) { // Called directly - no need to register
+			PyObjW node_body(node);
+			struct LexState * ls = &lex.state;
+			assert(PyList_Check(node_body));
+
+			node_body.each([this, ls, ud](PyObject * node_sttmnt) {
+				visit(node_sttmnt, ud);
+				lua_assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
+				ls->fs->freereg >= ls->fs->nactvar);
+				ls->fs->freereg = ls->fs->nactvar;  // free registers
+			});
+
+			return NULL;
+		}
+
+		void * visit_If(PyObject * node, void * ud = NULL) { // Equivalent of ifstat()
+			FuncState * fs = lex.state.fs;
+
+		}
+
+		void * visit_Module(PyObject * node, void * ud = NULL) { // Equivalent of chunk()
 			PyObjW nodew(node);
 			struct LexState * ls = &lex.state;
 			printf("| MODULE VISITOR |\n");
@@ -68,26 +89,20 @@ namespace pylua {
 
 			PyObjW node_body = nodew["body"];
 			assert(node_body != PyObjW::None);
-			assert(PyList_Check(node_body));
 
-			node_body.each([this, ls](PyObject * node_sttmnt) {
-				visit(node_sttmnt);
-				lua_assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
-				ls->fs->freereg >= ls->fs->nactvar);
-				ls->fs->freereg = ls->fs->nactvar;  // free registers
-			});
+			visit_Body(node_body);
 
 			leavelevel(&lex.state);
 
 			return NULL;
 		}
 
-		Proto * visit_Expr(PyObject * node) {
+		void * visit_Expr(PyObject * node, void * ud = NULL) {
 			printf("| EXPR VISITOR |\n");
-			return generic_visit(node);
+			return generic_visit(node, ud);
 		}
 
-		virtual Proto * generic_visit(PyObject * node) {
+		virtual void * generic_visit(PyObject * node, void * ud = NULL) {
 			//PyObject * node_vars = PyObject_GetAttrString(node, "__dict__");
 			PyObjW node_vars = PyObjW(node)["_dict_"];
 			if (node_vars != PyObjW::None) {
@@ -96,7 +111,7 @@ namespace pylua {
 				printf("\n");
 			}
 
-			return PyAST_Visitor::generic_visit(node);
+			return PyAST_Visitor::generic_visit(node, ud);
 		}
 
 		Proto * start(PyObject * ast) { // Equivalent of luaY_parser()
