@@ -2,6 +2,7 @@
 #define pyobjw_h
 
 #include <Python.h>
+#include <string>
 
 namespace pylua {
 	class PyObjW {
@@ -37,6 +38,14 @@ namespace pylua {
 			return obj;
 		}
 
+		std::string type() {
+			PyObjW cls = (*this)["__class__"];
+			assert(cls != None);
+			PyObjW nam = cls["__name__"];
+			assert(nam != None);
+			return PyUnicode_AsUTF8(nam);
+		}
+
 		PyObjW operator[](const char * attrname) {
 			PyObject * attr = PyObject_GetAttrString(obj, attrname);
 			if (!attr) return None;
@@ -49,6 +58,13 @@ namespace pylua {
 			if (!attr) return None;
 
 			return NewRef(attr);
+		}
+
+		PyObjW operator[](int n) {
+			PyObject * item = PyList_GetItem(obj, n);
+			if (!item) return None;
+
+			return item;
 		}
 
 		template<typename F>

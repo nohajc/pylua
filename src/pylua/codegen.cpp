@@ -11,6 +11,7 @@
 #include "../llex.h"
 #include "../lstring.h"
 #include "../lparser.h"
+#include "../lcode.h"
 
 namespace pylua {
 	using namespace std;
@@ -60,10 +61,12 @@ namespace pylua {
 			return PyAST_Visitor::visit(node, ud);
 		}
 
-		void * visit_Body(PyObject * node, void * ud = NULL) { // Called directly - no need to register
+		void * visit_Body(PyObject * node, void * ud = NULL) { // Called directly - no need to register, equivalent of chunk()
 			PyObjW node_body(node);
 			struct LexState * ls = &lex.state;
 			assert(PyList_Check(node_body));
+
+			enterlevel(ls);
 
 			node_body.each([this, ls, ud](PyObject * node_sttmnt) {
 				visit(node_sttmnt, ud);
@@ -72,39 +75,115 @@ namespace pylua {
 				ls->fs->freereg = ls->fs->nactvar;  // free registers
 			});
 
+			leavelevel(ls);
+
 			return NULL;
 		}
 
-		void * visit_If(PyObject * node, void * ud = NULL) { // Equivalent of ifstat()
-			FuncState * fs = lex.state.fs;
+		void * visit_Block(PyObject * node, void * ud = NULL) { // Called directly - no need to register
+			FuncState *fs = lex.state.fs;
+			BlockCnt bl;
+			enterblock(fs, &bl, 0);
 
+			void * ret = visit_Body(node);
+
+			lua_assert(bl.breaklist == NO_JUMP);
+			leaveblock(fs);
+
+			return ret;
 		}
 
-		void * visit_Module(PyObject * node, void * ud = NULL) { // Equivalent of chunk()
+		void * visit_If(PyObject * node, void * ud) { // Equivalent of ifstat()
 			PyObjW nodew(node);
-			struct LexState * ls = &lex.state;
+			FuncState * fs = lex.state.fs;
+			int flist;
+			int escapelist = NO_JUMP;
+
+			// test_then_block(ls) equivalent inlined
+			PyObjW node_test = nodew["test"];
+			assert(node_test != PyObjW::None);
+			flist = cast(int, visit(node_test)); // cond(ls)
+
+			PyObjW node_body = nodew["body"];
+			assert(node_body != PyObjW::None);
+			visit_Block(node_body); // block(ls);
+
+			/*
+			while (ls->t.token == TK_ELSEIF) {
+				luaK_concat(fs, &escapelist, luaK_jump(fs));
+				luaK_patchtohere(fs, flist);
+				flist = test_then_block(ls);  // ELSEIF cond THEN block
+			}
+			if (ls->t.token == TK_ELSE) {
+				luaK_concat(fs, &escapelist, luaK_jump(fs));
+				luaK_patchtohere(fs, flist);
+				luaX_next(ls);  // skip ELSE (after patch, for correct line info)
+				block(ls);  // `else' part
+			}
+			else
+				luaK_concat(fs, &escapelist, flist);
+			luaK_patchtohere(fs, escapelist);
+			check_match(ls, TK_END, TK_IF, line);
+			*/
+
+			PyObjW node_else = nodew["orelse"];
+			assert(PyList_Check(node_else));
+
+			while (node_else[0].type() == "If") { // Has nested if (elif)
+				nodew = node_else[0];
+				luaK_concat(fs, &escapelist, luaK_jump(fs));
+				luaK_patchtohere(fs, flist);
+				
+				node_test = nodew["test"];
+				assert(node_test != PyObjW::None);
+				flist = cast(int, visit(node_test)); // cond(ls)
+
+				node_body = nodew["body"];
+				assert(node_body != PyObjW::None);
+				visit_Block(node_body); // block(ls);
+
+				node_else = nodew["orelse"];
+				assert(PyList_Check(node_else));
+			}
+
+			if (PyList_Size(node_else) > 0) { // Has else part
+				luaK_concat(fs, &escapelist, luaK_jump(fs));
+				luaK_patchtohere(fs, flist);
+				visit_Block(node_else); // block(ls);
+			}
+			else {
+				luaK_concat(fs, &escapelist, flist);
+			}
+			luaK_patchtohere(fs, escapelist);
+
+			return NULL;
+		}
+
+		void * visit_Module(PyObject * node, void * ud) {
+			PyObjW nodew(node);
+			//struct LexState * ls = &lex.state;
 			printf("| MODULE VISITOR |\n");
 
-			enterlevel(ls);
+			//enterlevel(ls);
 
 			PyObjW node_body = nodew["body"];
 			assert(node_body != PyObjW::None);
 
 			visit_Body(node_body);
 
-			leavelevel(&lex.state);
+			//leavelevel(&lex.state);
 
 			return NULL;
 		}
 
-		void * visit_Expr(PyObject * node, void * ud = NULL) {
+		void * visit_Expr(PyObject * node, void * ud) {
 			printf("| EXPR VISITOR |\n");
 			return generic_visit(node, ud);
 		}
 
 		virtual void * generic_visit(PyObject * node, void * ud = NULL) {
 			//PyObject * node_vars = PyObject_GetAttrString(node, "__dict__");
-			PyObjW node_vars = PyObjW(node)["_dict_"];
+			PyObjW node_vars = PyObjW(node)["__dict__"];
 			if (node_vars != PyObjW::None) {
 				printf("\t");
 				PyObject_Print(node_vars, stdout, 0);

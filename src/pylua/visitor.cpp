@@ -66,9 +66,10 @@ namespace pylua {
 		/*PyObject * node_class = PyObject_GetAttrString(node, "__class__");
 		PyObject * node_class_name = PyObject_GetAttrString(node_class, "__name__");*/
 
-		PyObjW node_class = PyObjW(node)["__class__"];
+		/*PyObjW node_class = PyObjW(node)["__class__"];
 		PyObjW node_class_name = node_class["__name__"];
-		string key = PyUnicode_AsUTF8(node_class_name);
+		string key = PyUnicode_AsUTF8(node_class_name);*/
+		string key = PyObjW(node).type();
 
 		/*Py_DECREF(node_class_name);
 		Py_DECREF(node_class);*/

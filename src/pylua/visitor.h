@@ -33,7 +33,7 @@ namespace pylua {
 // Takes method with the given name and adds it to the v_fn_map visitor table.
 // std::bind is used to bind the corresponding visitor instance pointer to the method as its first argument.
 #define REG_VISITOR(name) \
-	register_visitor_func(#name, bind(&remove_reference<decltype(*this)>::type::visit_ ## name, this, placeholders::_1))
+	register_visitor_func(#name, bind(&remove_reference<decltype(*this)>::type::visit_ ## name, this, placeholders::_1, placeholders::_2))
 }
 
 #endif

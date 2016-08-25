@@ -36,15 +36,15 @@
 
 /*
 ** nodes for block list (list of active blocks)
-*/
+*//*
 typedef struct BlockCnt {
-  struct BlockCnt *previous;  /* chain */
-  int breaklist;  /* list of jumps out of this loop */
-  lu_byte nactvar;  /* # active locals outside the breakable structure */
-  lu_byte upval;  /* true if some variable in the block is an upvalue */
-  lu_byte isbreakable;  /* true if `block' is a loop */
+  struct BlockCnt *previous;  // chain
+  int breaklist;  // list of jumps out of this loop
+  lu_byte nactvar;  // # active locals outside the breakable structure
+  lu_byte upval;  // true if some variable in the block is an upvalue
+  lu_byte isbreakable;  // true if `block' is a loop
 } BlockCnt;
-
+*/
 
 
 /*
@@ -282,7 +282,7 @@ void enterlevel (LexState *ls) {
 
 
 
-static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
+void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
   bl->breaklist = NO_JUMP;
   bl->isbreakable = isbreakable;
   bl->nactvar = fs->nactvar;
@@ -293,7 +293,7 @@ static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
 }
 
 
-static void leaveblock (FuncState *fs) {
+void leaveblock (FuncState *fs) {
   BlockCnt *bl = fs->bl;
   fs->bl = bl->previous;
   removevars(fs->ls, bl->nactvar);

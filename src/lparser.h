@@ -74,6 +74,17 @@ typedef struct FuncState {
   unsigned short actvar[LUAI_MAXVARS];  /* declared-variable stack */
 } FuncState;
 
+/*
+** nodes for block list (list of active blocks)
+*/
+typedef struct BlockCnt {
+  struct BlockCnt *previous;  /* chain */
+  int breaklist;  /* list of jumps out of this loop */
+  lu_byte nactvar;  /* # active locals outside the breakable structure */
+  lu_byte upval;  /* true if some variable in the block is an upvalue */
+  lu_byte isbreakable;  /* true if `block' is a loop */
+} BlockCnt;
+
 
 LUAI_FUNC Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
                                             const char *name);
@@ -84,5 +95,8 @@ void close_func (LexState *ls);
 void enterlevel (LexState *ls);
 
 #define leavelevel(ls)	((ls)->L->nCcalls--)
+
+void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable);
+void leaveblock (FuncState *fs);
 
 #endif
